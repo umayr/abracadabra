@@ -10,22 +10,42 @@ const chalk = require('chalk');
 
 const root = process.cwd();
 
+const log = {
+  info(message) {
+    console.log(chalk.cyan(message));
+  },
+  warn(message) {
+    console.log(chalk.yellow(message));
+  },
+  error(message) {
+    console.log(chalk.red(message));
+  },
+  success(message) {
+    console.log(chalk.green(message));
+  }
+};
+
 function copy(name) {
   return new Promise((resolve, reject) => {
     try {
       exists(name).then(exists => {
-        if (!exists) {
-          let rc = `.${name}rc`;
-          let ignore = `.${name}ignore`;
+        try {
+          if (!exists) {
+            let rc = `.${name}rc`;
+            let ignore = `.${name}ignore`;
 
-          console.log(chalk.green(`Creating configuration file for ${name}.`));
-          validate.copy(path.join('../templates/', rc), rc);
+            log.info(`Creating configuration file for ${name}.`);
+            validate.copy(path.join('../templates/', rc), rc);
 
-          console.log(chalk.green(`Creating ignore file for ${name}.`));
-          validate.copy(path.join('../templates/', ignore), ignore);
+            log.info(`Creating ignore file for ${name}.`);
+            validate.copy(path.join('../templates/', ignore), ignore);
+          }
+          else {
+            log.warn(`Configurations for ${name} already exists in the root.`);
+          }
         }
-        else {
-          console.log(chalk.yellow(`Configurations for ${name} already exists in the root.`));
+        catch (e) {
+          throw e;
         }
 
         resolve(name);
@@ -117,6 +137,11 @@ function exists(name) {
   });
 }
 
+function resolve(name) {
+  log.info(`Found configurations for ${name} in the root directory.`);
+  return Promise.resolve(name);
+}
+
 function init() {
   Promise
     .all([
@@ -128,17 +153,22 @@ function init() {
       let jshint = result[1];
 
       if (!eslint && !jshint) return prompt();
-      else if (eslint) return Promise.resolve('eslint');
-      else if (jshint) return Promise.resolve('jshint');
+      else if (eslint) return resolve('eslint');
+      else if (jshint) return resolve('jshint');
       else throw new Error('Something went wrong');
     })
     .then(tool => {
+      log.info(`Adding script for lint.`);
       return script('lint', `./node_modules/.bin/${tool} .`);
     })
     .then(() => {
+      log.info(`Adding pre-commit hook.`);
       return configure('pre-commit', ['lint']);
     })
-    .catch(error => console.log(chalk.red(error.message)));
+    .then(() => {
+      log.success('Successfully installed pre-commit hooks.');
+    })
+    .catch(error => log.error(error.message));
 }
 
 init();
