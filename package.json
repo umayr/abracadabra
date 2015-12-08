@@ -1,0 +1,32 @@
+{
+  "name": "abracadabra",
+  "version": "0.1.0",
+  "description": "Adds a pre-commit hook to keep your code sane",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "install": "node bin/install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/umayr/abracadabra.git"
+  },
+  "keywords": [
+    "precommit hook",
+    "linting",
+    "eslint",
+    "git hooks",
+    "jslint"
+  ],
+  "author": "Umayr Shahid <umayrr@hotmail.co.uk>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/umayr/abracadabra/issues"
+  },
+  "homepage": "https://github.com/umayr/abracadabra#readme",
+  "dependencies": {
+    "chalk": "^1.1.1",
+    "git-validate": "^2.1.2",
+    "inquirer": "^0.11.0"
+  }
+}
