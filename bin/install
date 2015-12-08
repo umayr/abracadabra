@@ -1,0 +1,146 @@
+#!/usr/bin/env node
+
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+const validate = require('git-validate');
+const inquirer = require('inquirer');
+const chalk = require('chalk');
+
+const root = process.cwd();
+
+function copy(name) {
+    return new Promise((resolve, reject) => {
+        try {
+            exists(name).then(exists => {
+                if (!exists) {
+                    let rc = `.${name}rc`;
+                    let ignore = `.${name}ignore`;
+
+                    console.log(chalk.green(`Creating configuration file for ${name}.`));
+                    validate.copy(path.join('../templates/', rc), ec);
+
+                    console.log(chalk.green(`Creating ignore file for ${name}.`));
+                    validate.copy(path.join('../templates/', ignore), ignore);
+                }
+                else {
+                    console.log(chalk.yellow(`Configurations for ${name} already exists in the root.`));
+                }
+
+                resolve(name);
+            });
+        }
+        catch (e) {
+            reject(e);
+        }
+    });
+}
+
+function script(name, script) {
+    return new Promise((resolve, reject) => {
+        try {
+            validate.installScript(name, script);
+            resolve();
+        }
+        catch (e) {
+            reject(e);
+        }
+    });
+}
+
+function configure(name, config) {
+    return new Promise((resolve, reject) => {
+        try {
+            validate.configureHook(name, config);
+            resolve();
+        }
+        catch (e) {
+            reject(e);
+        }
+    });
+
+}
+
+function prompt() {
+    return new Promise((resolve, reject)=> {
+        let tool = null;
+        let prompts = [
+            {
+                type: 'list',
+                message: 'Select linting tool',
+                name: 'tool',
+                choices: [
+                    {
+                        name: 'ESLint',
+                        checked: true
+                    },
+                    {
+                        name: 'JSHint'
+                    },
+                    {
+                        name: 'JSCS'
+                    }
+                ]
+            }
+        ];
+
+        function onEachAnswer(props) {
+            tool = String(props.answer).toLowerCase();
+        }
+
+        function onError(error) {
+            reject(error);
+        }
+
+        function onComplete() {
+            return copy(tool).then(resolve);
+        }
+
+        return inquirer.prompt(prompts).process.subscribe(
+            onEachAnswer,
+            onError,
+            onComplete
+        );
+    });
+
+
+}
+
+function exists(name) {
+    let filepath = path.join(root, '/', `.${name}rc`);
+    return new Promise((resolve, reject) => {
+        fs.stat(filepath, (error, stats) => {
+            if (error && error.errno !== -2) return reject(error);
+            let exists = typeof stats !== 'undefined' ? stats.isFile() : false;
+
+            resolve(exists);
+        });
+    });
+}
+
+function init() {
+    Promise
+        .all([
+            exists('eslint'),
+            exists('jshint')
+        ])
+        .then(result => {
+            let eslint = result[0];
+            let jshint = result[1];
+
+            if (!eslint && !jshint) return prompt();
+            else if (eslint) return Promise.resolve('eslint');
+            else if (jshint) return Promise.resolve('jshint');
+            else throw new Error('Something went wrong');
+        })
+        .then(tool => {
+            return script('lint', `./node_modules/.bin/${tool} .`);
+        })
+        .then(() => {
+            return configure('pre-commit', ['lint']);
+        })
+        .catch(error => console.log(chalk.red(error.message)));
+}
+
+init();
