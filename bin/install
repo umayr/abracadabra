@@ -97,9 +97,6 @@ function prompt() {
           },
           {
             name: 'JSHint'
-          },
-          {
-            name: 'JSCS'
           }
         ]
       }
