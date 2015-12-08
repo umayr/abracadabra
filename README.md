@@ -1,2 +1,3 @@
-# abracadabra
-Adds a pre-commit hook to keep your code sane.
+# Abracadabra
+> Dark magic to keep you from committing crazy code.
+
