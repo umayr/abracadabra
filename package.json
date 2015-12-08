@@ -1,12 +1,12 @@
 {
   "name": "abracadabra",
   "version": "0.1.0",
-  "description": "Adds a pre-commit hook to keep your code sane",
-  "main": "index.js",
+  "description": "Dark magic to keep you from committing crazy code.",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npm run lint",
     "install": "node bin/install",
-    "lint": "./node_modules/.bin/eslint ."
+    "lint": "./node_modules/.bin/eslint bin/install",
+    "fix": "npm run lint -- --fix"
   },
   "repository": {
     "type": "git",
