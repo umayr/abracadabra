@@ -1,5 +1,5 @@
 # Abracadabra
-> Dark magic to keep you from committing crazy code.
+> Helps you keep your code less crazy by adding either eslint or jshint in the pre-commit hooks.
 
 ## Usage
 
