@@ -27,3 +27,10 @@ There are two major differences, one being that `nlf/precommit-hook` only suppor
 #### Default configurations?
 
 Here they are; [`.eslintrc`](https://github.com/umayr/abracadabra/blob/master/templates/.eslintrc) & [`.jshintrc`](https://github.com/umayr/abracadabra/blob/master/templates/.jshintignore).
+
+#### I need to commit a hotfix, how do I bypass the linting?
+
+You can bypass the pre-commit hook by:
+```bash
+ $ git commit --no-verify
+```
