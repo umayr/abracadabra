@@ -5,7 +5,7 @@
 
 In your project root directory, type:
 ```
-  $ npm install --save abracadabra
+  $ npm install --save-dev abracadabra
 ```
 
 and that's it. 
