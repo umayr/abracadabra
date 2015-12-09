@@ -1,7 +1,7 @@
 {
   "name": "abracadabra",
   "version": "0.2.0",
-  "description": "Dark magic to keep you from committing crazy code.",
+  "description": "Helps you keep your code less crazy by adding either eslint or jshint in the pre-commit hooks.",
   "scripts": {
     "test": "npm run lint",
     "install": "node bin/install",
@@ -17,7 +17,7 @@
     "linting",
     "eslint",
     "git hooks",
-    "jslint"
+    "jshint"
   ],
   "author": "Umayr Shahid <umayrr@hotmail.co.uk>",
   "license": "MIT",
