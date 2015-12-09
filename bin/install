@@ -8,8 +8,12 @@ const validate = require('git-validate');
 const inquirer = require('inquirer');
 const chalk = require('chalk');
 
-let root = process.cwd();
-
+/**
+ * Object to wraps various log functions to display colourful output.
+ *
+ * @private
+ * @type {}
+ */
 const log = {
   info(message) {
     console.log(chalk.cyan(message));
@@ -25,6 +29,11 @@ const log = {
   }
 };
 
+/**
+ * Method to copy lint config files to the root directory.
+ * @param name
+ * @returns {Promise}
+ */
 function copy(name) {
   return new Promise((resolve, reject) => {
     try {
@@ -57,11 +66,18 @@ function copy(name) {
   });
 }
 
-function script(name, script) {
+/**
+ * Adds a script for linting in the package.json.
+ *
+ * @param name
+ * @param tool
+ * @returns {Promise}
+ */
+function script(name, tool) {
   return new Promise((resolve, reject) => {
     try {
-      validate.installScript(name, script);
-      resolve();
+      validate.installScript(name, `./node_modules/.bin/${tool} .`);
+      resolve(tool);
     }
     catch (e) {
       reject(e);
@@ -69,6 +85,13 @@ function script(name, script) {
   });
 }
 
+/**
+ * Configure pre-commit cook to run linting.
+ *
+ * @param name
+ * @param config
+ * @returns {Promise}
+ */
 function configure(name, config) {
   return new Promise((resolve, reject) => {
     try {
@@ -79,9 +102,13 @@ function configure(name, config) {
       reject(e);
     }
   });
-
 }
 
+/**
+ * Prompts whether you want to install eslint or jshint.
+ *
+ * @returns {Promise}
+ */
 function prompt() {
   return new Promise((resolve, reject) => {
     let tool = null;
@@ -92,11 +119,11 @@ function prompt() {
         name: 'tool',
         choices: [
           {
-            name: 'ESLint',
+            name: 'eslint',
             checked: true
           },
           {
-            name: 'JSHint'
+            name: 'jshint'
           }
         ]
       }
@@ -122,10 +149,25 @@ function prompt() {
   });
 }
 
-function exists(name) {
+/**
+ * Returns root directory of callee module.
+ *
+ * @returns {*}
+ */
+function root() {
+  let root = process.cwd();
   if (root.match(/node_modules/)) root = root.split('node_modules/')[0];
+  return root;
+}
 
-  let filepath = path.join(root, '/', `.${name}rc`);
+/**
+ * Returns true if there's a file exists with the provided name.
+ *
+ * @param name
+ * @returns {Promise}
+ */
+function exists(name) {
+  let filepath = path.join(root(), '/', `.${name}rc`);
   return new Promise((resolve, reject) => {
     fs.stat(filepath, (error, stats) => {
       if (error && error.errno !== -2) return reject(error);
@@ -136,38 +178,102 @@ function exists(name) {
   });
 }
 
+/**
+ * Abstract method to resolve a promise chain.
+ *
+ * @param name
+ * @returns {Promise.<*>}
+ */
 function resolve(name) {
   log.info(`Found configurations for ${name} in the root directory.`);
   return Promise.resolve(name);
 }
 
-function init() {
-  Promise
-    .all([
-      exists('eslint'),
-      exists('jshint')
-    ])
-    .then(result => {
-      let eslint = result[0];
-      let jshint = result[1];
+/**
+ * Verifies if the selected lint package is installed in the callee module.
+ *
+ * If its not installed, it goes ahead and install it.
+ * TODO: Add a prompt to ask whether or not execute it.
+ *
+ * @param name
+ * @returns {Promise}
+ */
+function install(name) {
+  return new Promise((resolve, reject) => {
+    try {
+      let pkg = {};
+      try {
+        pkg = require(path.resolve(`${root()}/package.json`));
+      }
+      catch (e) {
+        return reject(new Error('Unable to find package.json in the root directory.'));
+      }
+      let deps = pkg.devDependencies;
 
-      if (!eslint && !jshint) return prompt();
-      else if (eslint) return resolve('eslint');
-      else if (jshint) return resolve('jshint');
-      else throw new Error('Something went wrong');
-    })
-    .then(tool => {
-      log.info(`Adding script for lint.`);
-      return script('lint', `./node_modules/.bin/${tool} .`);
-    })
-    .then(() => {
-      log.info(`Adding pre-commit hook.`);
-      return configure('pre-commit', ['lint']);
-    })
-    .then(() => {
-      log.success('Successfully installed pre-commit hooks.');
-    })
-    .catch(error => log.error(error.message));
+      if (!deps || (deps && typeof deps[name] === 'undefined')) {
+        log.warn(`You don't seem to have ${name} installed.`);
+
+        const BottomBar = inquirer.ui.BottomBar;
+        const cmdify = require('cmdify');
+
+        const loader = [
+          '\\ Installing',
+          '| Installing',
+          '/ Installing',
+          '- Installing'
+        ];
+        let i = loader.length;
+        var ui = new BottomBar({bottomBar: loader[i % loader.length]});
+
+        setInterval(() => ui.updateBottomBar(loader[i++ % loader.length]), 75);
+
+        let spawn = require('child_process').spawn;
+
+        var cmd = spawn(cmdify('npm'), ['install', '--save-dev', name], {stdio: 'pipe'});
+        cmd.stdout.pipe(ui.log);
+        cmd.on('close', () => {
+          ui.updateBottomBar('Installation done!\n');
+          return resolve();
+        });
+      }
+      else {
+        log.info(`You already have ${name} installed`);
+        resolve();
+      }
+    }
+    catch (e) {
+      return reject(e);
+    }
+  });
 }
 
-init();
+Promise
+  .all([
+    exists('eslint'),
+    exists('jshint')
+  ])
+  .then(result => {
+    let eslint = result[0];
+    let jshint = result[1];
+
+    if (!eslint && !jshint) return prompt();
+    else if (eslint) return resolve('eslint');
+    else if (jshint) return resolve('jshint');
+    else throw new Error('Something went wrong');
+  })
+  .then(tool => {
+    log.info(`Adding script for lint.`);
+    return script('lint', tool);
+  })
+  .then(tool => {
+    return install(tool);
+  })
+  .then(() => {
+    log.info(`Adding pre-commit hook.`);
+    return configure('pre-commit', ['lint']);
+  })
+  .then(() => {
+    log.success('Successfully installed pre-commit hooks.');
+    process.exit(0);
+  })
+  .catch(error => log.error(error.message));
