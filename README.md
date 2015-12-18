@@ -34,3 +34,7 @@ You can bypass the pre-commit hook by:
 ```bash
  $ git commit --no-verify
 ```
+
+#### I'm using a GUI app for git, but it doesn't seem to commit?
+
+See Issue: [#1](https://github.com/umayr/abracadabra/issues/1). In short, start you GUI app from terminal.
