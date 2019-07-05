@@ -6,7 +6,9 @@
     "test": "npm run lint",
     "install": "node bin/install",
     "lint": "./node_modules/.bin/eslint bin/install",
-    "fix": "npm run lint -- --fix"
+    "fix": "npm run lint -- --fix",
+    "snyk-protect": "snyk protect",
+    "prepublish": "npm run snyk-protect"
   },
   "repository": {
     "type": "git",
@@ -29,12 +31,14 @@
     "chalk": "^1.1.1",
     "cmdify": "0.0.4",
     "git-validate": "^2.1.2",
-    "inquirer": "^0.12.0"
+    "inquirer": "^0.12.0",
+    "snyk": "^1.192.0"
   },
   "pre-commit": [
     "lint"
   ],
   "devDependencies": {
     "eslint": "^1.10.3"
-  }
+  },
+  "snyk": true
 }
